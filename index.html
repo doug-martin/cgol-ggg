@@ -21,6 +21,8 @@
     <input type="button" id="toggle" value="Pause"/>
 </div>
 <div id="log" class="detail">
+    <span>loops&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="evaluations"></span>
+    <br/>
     <span>running time&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="running_time"></span>min<br/>
     <br/>
     <span>births&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="give_birth"></span><br/>
@@ -47,6 +49,7 @@
         var assertions  = 0,
             births      = 0,
             crowdedKills= 0,
+            evaluations = 0,
             fires       = 0,
             flow        = nools.getFlow("conways"), Cell = flow.getDefined("Cell"),
             isPaused    = false,
@@ -114,39 +117,42 @@
                     $('#avg_transition_delta').text(Math.round(transCum / transitions));
                     atime = btime; 
                     if (cell.state === "live") {
-                            cell.el.removeClass("dead").addClass("live");
-                        } else {
-                            cell.el.removeClass("live").addClass("dead");
-                        }
-                        transitions = transitions + 1;
-                        $('#transitions_count').text(transitions);
-                    })
-                    .on("pause", function () {
-                        console.log("requesting halt.");
-                        isPaused = true;
-                    }).on("assert", function(fact){
-                        assertions = assertions + 1;
-                        $('#assertions_count').text(assertions);
-                    }).on("retract", function(fact){
-                        retractions = retractions + 1;
-                        $('#retractions_count').text(retractions);
-                    }).on("fire", function(fact){
-                        fires = fires + 1;
-                        $('#fires_count').text(fires);
-                    }).on("give-birth", function(fact){
-                        births = births + 1;
-                        $('#give_birth').text(births);
-                    }).on("kill-the-over-crowded", function(fact){
-                        crowdedKills = crowdedKills + 1;
-                        $('#kill_the_over_crowded').text(crowdedKills);
-                    }).on("kill-the-lonely", function(fact){
-                        lonelyKills = lonelyKills + 1;
-                        $('#kill_the_lonely').text(lonelyKills);
-                    })
-                    .matchUntilHalt().then(function () {
-                         console.log("engine halted.");
+                        cell.el.removeClass("dead").addClass("live");
+                    } 
+                    else {
+                        cell.el.removeClass("live").addClass("dead");
                     }
-                );
+                    transitions = transitions + 1;
+                    $('#transitions_count').text(transitions);
+                })
+                .on("pause", function () {
+                    console.log("requesting halt.");
+                    isPaused = true;
+                }).on("assert", function(fact){
+                    assertions = assertions + 1;
+                    $('#assertions_count').text(assertions);
+                }).on("retract", function(fact){
+                    retractions = retractions + 1;
+                    $('#retractions_count').text(retractions);
+                }).on("fire", function(fact){
+                    fires = fires + 1;
+                    $('#fires_count').text(fires);
+                }).on("give-birth", function(fact){
+                    births = births + 1;
+                    $('#give_birth').text(births);
+                    }).on("kill-the-over-crowded", function(fact){
+                    crowdedKills = crowdedKills + 1;
+                    $('#kill_the_over_crowded').text(crowdedKills);
+                }).on("kill-the-lonely", function(fact){
+                    lonelyKills = lonelyKills + 1;
+                    $('#kill_the_lonely').text(lonelyKills);
+                }).on("evaluate", function(fact){
+                    evaluations = evaluations + 1;
+                    $('#evaluations').text(evaluations);
+                })
+                .matchUntilHalt().then(function () {
+                     console.log("engine halted.");
+                });
             };
         }());
 
