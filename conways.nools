@@ -84,6 +84,7 @@ rule KillTheLonely{
     }
     then {
         c.queueNextState("dead");
+        emit("kill-the-lonely");
     }
 }
 
@@ -94,6 +95,7 @@ rule KillTheOverCrowded{
     }
     then {
         c.queueNextState("dead");
+        emit("kill-the-over-crowded");
     }
 }
 
@@ -104,6 +106,7 @@ rule GiveBirth{
     }
     then {
         c.queueNextState("live");
+        emit("give-birth");
     }
 }
 

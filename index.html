@@ -23,14 +23,19 @@
 <div id="log" class="detail">
     <span>running time&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="running_time"></span>min<br/>
     <br/>
+    <span>births&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="give_birth"></span><br/>
+    <span>crowded deaths&nbsp;&nbsp;:</span>  <span id="kill_the_over_crowded"></span><br/>
+    <span>lonely deaths&nbsp;&nbsp;&nbsp;:</span>  <span id="kill_the_lonely"></span><br/>
+    <br/>
     <span>facts asserted&nbsp;&nbsp;:</span>  <span id="assertions_count"></span><br/>
     <span>facts retracted&nbsp;:</span>  <span id="retractions_count"></span><br/>
     <br/>
-    <span>rules fired&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="fires_count"></span><br/>
+    <span>rule firings&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="fires_count"></span><br/>
     <br/>
     <span>transitions&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="transitions_count"></span><br/>
     <span>last transition&nbsp;:</span>  <span id="transition_delta"></span>ms<br/>
     <span>avg transition&nbsp;&nbsp;:</span>  <span id="avg_transition_delta"></span>ms<br/>
+    <br/>
 </div>
 
 <script src="http://code.jquery.com/jquery-1.9.0.min.js"></script>
@@ -40,10 +45,13 @@
     var init = (function () {
 
         var assertions  = 0,
+            births      = 0,
+            crowdedKills= 0,
             fires       = 0,
             flow        = nools.getFlow("conways"), Cell = flow.getDefined("Cell"),
             isPaused    = false,
             lastTrans,
+            lonelyKills = 0,
             retractions = 0,
             session,
             transitions = 0,
@@ -125,6 +133,15 @@
                     }).on("fire", function(fact){
                         fires = fires + 1;
                         $('#fires_count').text(fires);
+                    }).on("give-birth", function(fact){
+                        births = births + 1;
+                        $('#give_birth').text(births);
+                    }).on("kill-the-over-crowded", function(fact){
+                        crowdedKills = crowdedKills + 1;
+                        $('#kill_the_over_crowded').text(crowdedKills);
+                    }).on("kill-the-lonely", function(fact){
+                        lonelyKills = lonelyKills + 1;
+                        $('#kill_the_lonely').text(lonelyKills);
                     })
                     .matchUntilHalt().then(function () {
                          console.log("engine halted.");
