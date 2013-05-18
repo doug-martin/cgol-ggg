@@ -1,0 +1,96 @@
+body {
+    font-size: 14px;
+    line-height: 24px;
+    font-weight: bold;
+    font-family: 'Londrina Shadow', cursive;
+}
+
+.container {
+    float:left;
+    padding: 10px;
+    width: 460px;
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+    background: -webkit-gradient(linear, bottom, left 175px, from(#CCCCCC), to(#EEEEEE));
+    background: -moz-linear-gradient(bottom, #CCCCCC, #EEEEEE 175px);
+    border-top: 1px solid #999;
+    border-bottom: 1px solid #999;
+    border: inset 1px solid #333;
+    -webkit-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
+    -moz-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.3);
+}
+
+.container > header {
+    text-align: left;
+    text-align: left;
+}
+
+hr {
+    margin: 10px;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    -webkit-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
+    -moz-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
+}
+
+input[type="submit"], input[type="button"] {
+    width: 100px;
+    right: 20px;
+    bottom: 20px;
+    background: #09C;
+    color: #fff;
+    font-family: Tahoma, Geneva, sans-serif;
+    height: 30px;
+    -webkit-border-radius: 15px;
+    -moz-border-radius: 15px;
+    border-radius: 15px;
+    border: 1px solid #999;
+    margin: 10px;
+}
+
+#grid {
+
+    width: 450px;
+    height: 215px;
+    -webkit-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
+    -moz-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.1);
+    -webkit-border-radius: 10px;
+    -moz-border-radius: 10px;
+    border-radius: 10px;
+    padding: 3px;
+
+}
+
+.detail {
+    line-height: 12px;
+    float:left;
+    font-weight: normal;
+    font-family: Courier;
+    padding: 10px;
+    margin-right:5px;
+}
+
+.row {
+    display: table-row;
+}
+
+.col {
+    width: 10px;
+    height: 10px;
+    display: table-cell;
+    border: 1px solid #cbcbcb;
+    content: " ", -webkit-box-shadow : 0 px 0 px 8 px rgba ( 0, 0, 0, 0.2 );
+    -moz-box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.2);
+    box-shadow: 0px 0px 8px rgba(0, 0, 0, 0.2);
+}
+
+.col.live {
+    background-color: black;
+}
+
+.col.dead {
+    background-color: #F0F8FF;
+}

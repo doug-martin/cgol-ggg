@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>nools: Conways game of life</title>
+    <link type="text/css" rel="stylesheet" href="conways.css">
+    <link href='http://fonts.googleapis.com/css?family=Londrina+Shadow' rel='stylesheet' type='text/css'>
+</head>
+<body onload="init()">
+
+<div class="container">
+    <header>
+        <h1><a target="_blank" href="http://en.wikipedia.org/wiki/Conway%27s_Game_of_Life">Conway's Game of Life</a></h1>
+        <h2><a target="_blank" href="http://www.conwaylife.com/wiki/index.php?title=Gosper_glider_gun">Gosper glider gun</a></h2>
+        <h3>implemented using the <a target="_blank" href="https://github.com/C2FO/nools">nools</a> rules engine</h3>
+    </header>
+
+    <div id="grid"></div>
+
+    <input type="button" id="toggle" value="Pause"/>
+</div>
+<div id="log" class="detail">
+    <span>rules fired&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="fires_count"></span><br/>
+    <span>facts asserted&nbsp;&nbsp;:</span>  <span id="assertions_count"></span><br/>
+    <span>facts retracted&nbsp;:</span>  <span id="retractions_count"></span><br/>
+    <span>cell transitions:</span>  <span id="transitions_count"></span><br/>
+    <span>last transition&nbsp;:</span>  <span id="transition_delta"></span>ms<br/>
+    <span>avg transition&nbsp;&nbsp;:</span>  <span id="avg_transition_delta"></span>ms<br/>
+</div>
+
+<script src="http://code.jquery.com/jquery-1.9.0.min.js"></script>
+<script type="text/javascript" src="nools.js"></script>
+<script type="text/javascript" src="conways.js"></script>
+<script type="text/javascript">
+    var init = (function () {
+
+        var assertions  = 0,
+            fires       = 0,
+            flow        = nools.getFlow("conways"), Cell = flow.getDefined("Cell"),
+            isPaused    = false,
+            lastTrans,
+            retractions = 0,
+            session,
+            transitions = 0,
+            transCum    = 0;
+
+        var run = (function () {
+
+            var grid = $("#grid"), cells = [], rows = 18, cols = 38;
+            function addCell(row, col, cell) {
+                if (!cells[row]) {
+                    cells[row] = [];
+                }
+                cell.pos = [row, col];
+                cells[row][col] = cell;
+                return cell;
+            }
+
+            function createPattern(pattern) {
+                var cell;
+                for (var i = 0; i < rows; i++) {
+                    var row = $("<div class='row'></div>").appendTo(grid);
+                    for (var j = 0; j < cols; j++) {
+                        cell = addCell(i, j, new Cell());
+                        cell.el = $("<div class='col dead'></div>").appendTo(row);
+                        if (pattern[i] && pattern[i][j]) {
+                            cell.state = "live";
+                            cell.el.removeClass("dead").addClass("live");
+                        }
+                        if (i > 0) {
+                            cell.addNeighbor(cells[i - 1][j]);
+                            if (j <= (cols - 2)) {
+                                // neighbor to the northeast
+                                cell.addNeighbor(cells[i - 1][j + 1]);
+                            }
+                        }
+                        if (j > 0) {
+                            // neighbor to the west
+                            cell.addNeighbor(cells[i][j - 1]);
+                            if (i > 0) {
+                                // neighbor to the northwest
+                                cell.addNeighbor(cells[i - 1][j - 1]);
+                            }
+                        }
+                    }
+                }
+                return cell;
+            }
+
+            return function (pattern) {
+                grid.empty();
+                createPattern(pattern);
+                session = flow.getSession("populate", cells);
+                var atime = new Date();
+                session.on("cell-transition", function (cell) {
+                    var btime = new Date();
+                    var deltaTime = btime - atime;
+                    transCum = transCum + deltaTime;
+                    $('#transition_delta').text(deltaTime);
+                    $('#avg_transition_delta').text(Math.round((transCum / transitions),2));
+                    atime = btime; 
+                    if (cell.state === "live") {
+                            cell.el.removeClass("dead").addClass("live");
+                        } else {
+                            cell.el.removeClass("live").addClass("dead");
+                        }
+                        transitions = transitions + 1;
+                        $('#transitions_count').text(transitions);
+                    })
+                    .on("pause", function () {
+                        console.log("requesting halt.");
+                        isPaused = true;
+                    }).on("assert", function(fact){
+                        assertions = assertions + 1;
+                        $('#assertions_count').text(assertions);
+                    }).on("retract", function(fact){
+                        retractions = retractions + 1;
+                        $('#retractions_count').text(retractions);
+                    }).on("fire", function(fact){
+                        fires = fires + 1;
+                        $('#fires_count').text(fires);
+                    })
+                    .matchUntilHalt().then(function () {
+                         console.log("engine halted.");
+                    }
+                );
+            };
+        }());
+
+        return function () {
+            //setup grid;
+            run([]);
+            run(eval("(0, " + $("#pattern").val() + ")"));
+            $("#toggle").on("click", function () {
+                if (session) {
+                    if (isPaused == false) {
+                        session.assert("pause");
+                        $("#toggle").attr('value', 'Resume');
+                    }
+                    else if (isPaused == true) {
+                        session.matchUntilHalt();
+                        isPaused = false;
+                        $("#toggle").attr('value', 'Pause');
+                    }
+                }
+            });
+        };
+    }());
+</script>
+<textarea id="pattern" style="display:none;">
+  [
+  [false],[false],[false],
+  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true,  true, false, false, false, false, false, false, false, false, false,  true, true, false, false],
+  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true, false,  true, false, false, false, false, false, false, false, false, false,  true, true, false, false],
+  [ true,  true, false, false, false, false, false, false, false,  true,  true, false, false, false, false, false, false, false, false, false, false, false,  true,  true, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+  [ true,  true, false, false, false, false, false, false,  true, false,  true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+  [false, false, false, false, false, false, false, false,  true,  true, false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true, false,  true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false],
+  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true,  true, false],
+  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true, false,  true],
+  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true, false, false],
+  [false],
+  [false], 
+  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true,  true,  true, false, false, false, false, false, false, false, false, false, false, false],
+  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true, false, false, false, false, false, false, false, false, false, false, false, false, false],
+  [false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false,  true, false, false, false, false, false, false, false, false, false, false, false, false],
+  ]
+</textarea>
+
+</body>
+</html>
