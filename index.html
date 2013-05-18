@@ -62,13 +62,15 @@
 
         var run = (function () {
 
-            var grid = $("#grid"), cells = [], rows = 18, cols = 38;
+          var cells = [], frame = [], grid = $("#grid"), message = [], rows = 18, cols = 38;
             function addCell(row, col, cell) {
                 if (!cells[row]) {
                     cells[row] = [];
+                    frame[row] = [];
                 }
                 cell.pos = [row, col];
                 cells[row][col] = cell;
+                frame[row][col] = false;
                 return cell;
             }
 
@@ -80,8 +82,10 @@
                         cell = addCell(i, j, new Cell());
                         cell.el = $("<div class='col dead'></div>").appendTo(row);
                         if (pattern[i] && pattern[i][j]) {
+                            cell.pos   = [i, j];
                             cell.state = "live";
                             cell.el.removeClass("dead").addClass("live");
+                            frame[i][j] = true;
                         }
                         if (i > 0) {
                             cell.addNeighbor(cells[i - 1][j]);
@@ -100,6 +104,7 @@
                         }
                     }
                 }
+                console.log('FRAME: ' + JSON.stringify(frame));
                 return cell;
             }
 
@@ -118,9 +123,13 @@
                     atime = btime; 
                     if (cell.state === "live") {
                         cell.el.removeClass("dead").addClass("live");
+                        frame[cell.pos[0]][cell.pos[1]] = true;
+                        message.push([cell.pos[0],cell.pos[1]]);
                     } 
                     else {
                         cell.el.removeClass("live").addClass("dead");
+                        frame[cell.pos[0]][cell.pos[1]] = false;
+                        message.push([cell.pos[0],cell.pos[1]]);
                     }
                     transitions = transitions + 1;
                     $('#transitions_count').text(transitions);
@@ -149,6 +158,9 @@
                 }).on("evaluate", function(fact){
                     evaluations = evaluations + 1;
                     $('#evaluations').text(evaluations);
+                    console.log('FRAME: ' + JSON.stringify(message));
+                    lastFrame = frame;
+                    message = [];
                 })
                 .matchUntilHalt().then(function () {
                      console.log("engine halted.");
