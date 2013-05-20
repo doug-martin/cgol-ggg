@@ -21,6 +21,8 @@
     <input type="button" id="toggle" value="Pause"/>
 </div>
 <div id="log" class="detail">
+    <span>es stream id&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="stream_id"></span>
+    <br/>
     <span>loops&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="evaluations"></span>
     <br/>
     <span>running time&nbsp;&nbsp;&nbsp;&nbsp;:</span>  <span id="running_time"></span>min<br/>
@@ -44,6 +46,43 @@
 <script type="text/javascript" src="nools.js"></script>
 <script type="text/javascript" src="conways.js"></script>
 <script type="text/javascript">
+    function s4() {
+        return Math.floor((1 + Math.random()) * 0x10000)
+             .toString(16)
+             .substring(1);
+    };
+
+    function guid() {
+        return s4() + s4() + '-' + s4() + '-' + s4() + '-' +
+            s4() + '-' + s4() + s4() + s4();
+    }
+
+    var es = {
+        correlationId   : guid() + '-' + (new Date()).getTime(),
+        eventType       : 'CgolGeneric',
+        expectedVersion : 1,
+        streamId        : guid()
+    };
+    $('#stream_id').text(es.streamId);
+    var msgsTotal = 0;
+    function esSendMessage(data, type) {
+        msgsTotal = msgsTotal + 1;
+        var esMessage = [
+              {
+                  "EventId"   : guid(),
+                  "EventType" : type || es.eventType,
+                  "Data"      : data,
+                  "Metadata"  : ""
+              }
+        ];
+        $.ajax({
+            url         : '/streams/' + es.streamId,
+            type        : "POST",
+            data        : JSON.stringify(esMessage),
+            contentType : "application/json; charset=utf-8",
+        });
+    }
+
     var init = (function () {
 
         var assertions  = 0,
@@ -60,6 +99,7 @@
             transitions = 0,
             transCum    = 0;
 
+        
         var run = (function () {
 
           var cells = [], frame = [], grid = $("#grid"), message = [], rows = 18, cols = 38;
@@ -104,7 +144,7 @@
                         }
                     }
                 }
-                console.log('FRAME: ' + JSON.stringify(frame));
+                esSendMessage({Payload: frame}, 'CgolFrame');
                 return cell;
             }
 
@@ -158,7 +198,7 @@
                 }).on("evaluate", function(fact){
                     evaluations = evaluations + 1;
                     $('#evaluations').text(evaluations);
-                    console.log('FRAME: ' + JSON.stringify(message));
+                    esSendMessage({Payload: message}, 'CgolUpdate');
                     lastFrame = frame;
                     message = [];
                 })
