@@ -1,0 +1,104 @@
+<html>
+
+  <head>
+    <title>Scatter3d</title>
+    <link rel="stylesheet" href="canvasXpress.css" type="text/css"/>
+
+    <!--[if lt IE 9]><script type="text/javascript" src="flashcanvas.js"></script><![endif]-->
+    <script src="http://code.jquery.com/jquery-1.9.0.min.js"></script>
+    <script type="text/javascript" src="canvasXpress.min.js"></script>
+    <script type="text/javascript">
+
+      var chartDetail = {
+        "y": {
+          "smps": [ "X", "Y", "Z" ],
+          "desc": [ "Intensity" ],
+          "vars": [], "data": []
+        }
+      },
+      chartLookup = {},
+      chartConfig = {
+        "colors": ["#0000ff","#ff0000", "#00ff00"],
+        "graphType": "Scatter3D", "scatterType": false,
+        "useFlashIE": true,
+        "xAxis": [ "X" ], "yAxis": [ "Y" ], "zAxis": [ "Z" ],
+        "yRotate": parseFloat(0.0),
+        "xRotate": parseFloat(45.0),
+        "zRotate": parseFloat(0.0),
+        "setMinX": -38,
+        "setMinY": -18,
+        "setMinZ": 1,
+        "setMaxX": 1,
+        "setMaxY": 1,
+        "setMaxZ": 1000,
+        "shapes": ["square"],
+        "zoom":1.3 
+      };
+      
+      // pull the initial frame    
+      $.ajax({
+        url         : '/streams/f13fe863-7708-2379-6e99-38e3013eba5d/2',
+        type        : "GET",
+        contentType : "application/json; charset=utf-8",
+        success     : function (response) {
+          var remoteFrame = response.content.data.Payload;
+          for (var i=0; i < remoteFrame.length;i++) {
+            for (var j=0; j < remoteFrame[i].length;j++) {
+              if (remoteFrame[i][j] == true) {
+                chartDetail.y.data.push([j, 0-i, 1]);
+                chartDetail.y.vars.push('x'+j+',y'+0-i);
+                chartLookup['x'+j+',y'+i] = true;
+              } 
+            }
+          }
+          var cx = new CanvasXpress("canvas",chartDetail,chartConfig); 
+
+          // find the first event  
+          $.ajax({
+            url         : '/streams/f13fe863-7708-2379-6e99-38e3013eba5d/head',
+            type        : "GET",
+            contentType : "application/json; charset=utf-8",
+            success     : function (response) {
+              var firstEvent = parseInt(response.content.eventNumber);
+              // play back all the events 
+              for (var u=4; u <= firstEvent; u++) {
+                var updateUrl = '/streams/f13fe863-7708-2379-6e99-38e3013eba5d/' + u;
+                $.ajax({
+                  url         : updateUrl,
+                  type        : "GET",
+                  contentType : "application/json; charset=utf-8",
+                  success     : function (response) {
+                    var updated = response.updated;
+                    var remoteUpdates = response.content.data.Payload;
+                    var eventNumber = response.content.eventNumber;
+                    newData = {
+                      "y": {
+                        "vars": [],
+                        "smps": [ "X", "Y", "Z" ],
+                        "desc": ["Intensity"],
+                        "data": [],
+                      }
+                    };
+                    for (var i=0; i < remoteUpdates.length;i++) {
+                      if (!chartLookup['x'+remoteUpdates[i][1]+',y'+0-remoteUpdates[i][0]]) {
+                        newData.y.data.push([ remoteUpdates[i][1], 0-remoteUpdates[i][0], 1]);
+                        newData.y.vars.push('x'+remoteUpdates[i][1]+',y'+0-remoteUpdates[i][0]);
+                      }
+                    }
+                    if (newData.y.data[0]) {
+                      console.log('NEW FRAME: ' + eventNumber +  ' > ' + JSON.stringify(newData.y.data));
+                      cx.updateData(newData);
+                    }
+                  }
+                }); 
+              }
+            }
+          }); 
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+  </body>
+</html>
