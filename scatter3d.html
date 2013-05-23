@@ -1,25 +1,178 @@
-<!DOCTYPE html>
 <html>
-<head>
-<title>Welcome to nginx!</title>
-<style>
-    body {
-        width: 35em;
-        margin: 0 auto;
-        font-family: Tahoma, Verdana, Arial, sans-serif;
-    }
-</style>
-</head>
-<body>
-<h1>Welcome to nginx!</h1>
-<p>If you see this page, the nginx web server is successfully installed and
-working. Further configuration is required.</p>
 
-<p>For online documentation and support please refer to
-<a href="http://nginx.org/">nginx.org</a>.<br/>
-Commercial support is available at
-<a href="http://nginx.com/">nginx.com</a>.</p>
+  <head>
+    <title>Scatter3d</title>
+    <link rel="stylesheet" href="canvasXpress.css" type="text/css"/>
 
-<p><em>Thank you for using nginx.</em></p>
-</body>
+    <!--[if lt IE 9]><script type="text/javascript" src="flashcanvas.js"></script><![endif]-->
+    <script src="http://code.jquery.com/jquery-1.9.0.min.js"></script>
+    <script type="text/javascript" src="canvasXpress.min.js"></script>
+    <script type="text/javascript">
+
+      function clone(obj) {
+        if (null == obj || "object" != typeof obj) return obj;
+        if (obj instanceof Date) {
+          var copy = new Date();
+          copy.setTime(obj.getTime());
+          return copy;
+        }
+        if (obj instanceof Array) {
+          var copy = [];
+          for (var i = 0, len = obj.length; i < len; i++) {
+            copy[i] = clone(obj[i]);
+          }
+          return copy;
+        }
+        if (obj instanceof Object) {
+          var copy = {};
+            for (var attr in obj) {
+              if (obj.hasOwnProperty(attr)) copy[attr] = clone(obj[attr]);
+            }
+          return copy;
+        }
+        throw new Error("Unable to copy obj! Its type isn't supported.");
+      }
+
+      // Array Remove - By John Resig (MIT Licensed)
+      Array.prototype.remove = function(from, to) {
+        var rest = this.slice((to || from) + 1 || this.length);
+        this.length = from < 0 ? this.length + from : from;
+        return this.push.apply(this, rest);
+      };
+
+      function addCell (coord) {
+        var c = coord.split(',');
+        var x = parseInt(c[0]), y = parseInt(c[1]);
+        nextFrame.y.data.push([x, y, 1]);
+        nextFrame.y.vars.push(coord);
+        chartLookup[coord] = true;
+      }
+
+      function deleteCell(coord) {
+        var c = coord.split(',');
+        var x = parseInt(c[0]), y = parseInt(c[1]);
+        for (var i=0; i < nextFrame.y.data.length;i++) {
+          if (parseInt(nextFrame.y.data[i][0]) == x && parseInt(nextFrame.y.data[i][1]) == y) {
+            nextFrame.y.data.remove(i);
+            nextFrame.y.vars.remove(i);
+            chartLookup[coord] = false;
+          }
+        }
+      }
+
+      var chartDetail = {
+        "y": {
+          "smps": [ "X", "Y", "Z" ],
+          "desc": [ "Intensity" ],
+          "vars": [],
+          "data": []
+        }
+      },
+      chartLookup = {},
+      chartConfig = {
+        colors         : ["#00ddff","#ffffff", "#00ff00"],
+        graphType      : "Scatter3D", "scatterType": false,
+        useFlashIE     : true,
+        xAxis          : [ "X" ], "yAxis": [ "Y" ], "zAxis": [ "Z" ],
+        yRotate        : parseFloat(0.0),
+        xRotate        : parseFloat(45.0),
+        zRotate        : parseFloat(0.0),
+        xAxisShow      : false,
+        yAxisShow      : false,
+        zAxisShow      : false,
+        setMinX        : -38,
+        setMinY        : -18,
+        setMinZ        : 1,
+        setMaxX        : 1,
+        setMaxY        : 1,
+        setMaxZ        : 1000,
+        shapes         : ["sphere", "square", "square"],
+        gradient       : true,
+        showShadow     : true,
+        show3DGrid     : false,
+        background     : "rgb(226,226,226)",
+        backgroundType : "window",
+        sizes          : [20, 20, 20],
+        zoom           : 1.4,
+        showLegend     : false,
+      };
+
+      // var stream = '1fb15a3f-61e0-270f-c99a-9ff682c12ffa';
+      // var stream = 'f13fe863-7708-2379-6e99-38e3013eba5d';
+      var stream = '168cb899-7c30-2dfb-0e38-c282884f0fa2';
+      // var stream = '3c4a38b3-437e-48e5-e8e9-574bcf8471aa';
+      var nextFrame;
+
+      // pull the initial frame    
+      $.ajax({
+        url         : '/streams/' + stream + '/2',
+        type        : "GET",
+        contentType : "application/json; charset=utf-8",
+        success     : function (response) {
+          var remoteFrame = response.content.data.Payload;
+          console.log('building initial frame...');
+          for (var i=0; i < remoteFrame.length;i++) {
+            for (var j=0; j < remoteFrame[i].length;j++) {
+              if (remoteFrame[i][j] == true) {
+                chartDetail.y.data.push([j, 0-i, 1]);
+                chartDetail.y.vars.push('x'+(j)+',y'+(0-i));
+                chartLookup[((j)+','+(0-i)).toString()] = true;
+              } 
+              else {
+                chartLookup[((j)+','+(0-i)).toString()] = false;
+              }
+            }
+          }
+          console.log('done.');
+          nextFrame = clone(chartDetail);
+          var cx = new CanvasXpress("canvas",chartDetail,chartConfig); 
+
+          // find the first event  
+          $.ajax({
+            url         : '/streams/' + stream + '/head',
+            type        : "GET",
+            contentType : "application/json; charset=utf-8",
+            success     : function (response) {
+            var firstEvent = parseInt(response.content.eventNumber);
+              // play back all the events
+              var advanceFrame = function (cx,updateUrl) {
+                $.ajax({
+                  url         : updateUrl,
+                  type        : "GET",
+                  contentType : "application/json; charset=utf-8",
+                  success     : function (response) {
+                    var timeUpdated = response.updated;
+                    var deltaCells  = response.content.data.Payload;
+                    var eventNumber = response.content.eventNumber;
+                    for (var i=0; i < deltaCells.length;i++) {
+
+                      var x     = deltaCells[i][1];
+                      var y     = 0 - deltaCells[i][0];
+                      var coord = x + ',' + y;
+                      if (!chartLookup[coord]) {
+                        addCell(coord);
+                      }
+                      else if (chartLookup[coord]) {
+                        deleteCell(coord);
+                      }
+                    }
+                    console.log('advancing frame...');
+                    cx.updateData(nextFrame);
+                    console.log('done.');
+                  }
+                });
+              }; 
+              for (var u=4; u <= firstEvent; u++) {
+                var updateUrl = '/streams/' + stream + '/' + u;
+                setTimeout(advanceFrame,300*u,cx,updateUrl);
+              }
+            }
+          }); 
+        }
+      });
+    </script>
+  </head>
+  <body>
+    <canvas id="canvas" width="800" height="600"></canvas>
+  </body>
 </html>
